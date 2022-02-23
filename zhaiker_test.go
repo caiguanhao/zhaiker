@@ -16,7 +16,12 @@ func Test(t *testing.T) {
 	debug = os.Getenv("DEBUG") == "1"
 
 	ctx := context.Background()
-	client := NewClient(MustGetKey(ctx, accountName, accountPass))
+
+	managerId, apiKey := MustGetKey(ctx, accountName, accountPass)
+	t.Log("managerId:", managerId)
+	t.Log("apiKey:", apiKey)
+
+	client := NewClient(managerId, apiKey)
 	var gyms []Gym
 	client.MustRequest(ctx, API_GET_GYMS, Params("pageSize", 100), &gyms, "DATA.*")
 	gymsBytes, err := json.Marshal(gyms)
