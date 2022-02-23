@@ -143,7 +143,13 @@ type ScoreXYByBodyParts struct {
 func (s *ScoreXYByBodyParts) UnmarshalJSON(data []byte) error {
 	raw, err := strconv.Unquote(string(data))
 	if err != nil {
-		return err
+		type typ ScoreXYByBodyParts
+		var temp typ
+		if err := json.Unmarshal(data, &temp); err != nil {
+			return err
+		}
+		*s = ScoreXYByBodyParts(temp)
+		return nil
 	}
 	origin := scoreXYByBodyPartsOrigin{}
 	err = json.Unmarshal([]byte(raw), &origin)
@@ -209,7 +215,7 @@ func (origin scoreXYByBodyPartsOrigin) AsScoreXYByBodyParts() ScoreXYByBodyParts
 }
 
 type ExamWithStandards struct {
-	Exam                 Exam
+	Exam                 *Exam
 	BasicStandard        *BasicStandard
 	WeightGrowthStandard *StandardValues
 	HeightGrowthStandard *StandardValues
@@ -221,12 +227,21 @@ func (s *ExamWithStandards) UnmarshalJSON(data []byte) error {
 	if err != nil {
 		return err
 	}
+	if origin.Exam == nil {
+		type typ ExamWithStandards
+		var temp typ
+		if err := json.Unmarshal(data, &temp); err != nil {
+			return err
+		}
+		*s = ExamWithStandards(temp)
+		return nil
+	}
 	*s = origin.AsExamWithStandards()
 	return nil
 }
 
 type examWithStandardsOrigin struct {
-	Exam                 Exam                 `json:"DATA"`
+	Exam                 *Exam                `json:"DATA"`
 	BasicStandard        *basicStandardOrigin `json:"standard"`
 	WeightGrowthStandard *StandardValues      `json:"weightGrowthStandard"`
 	HeightGrowthStandard *StandardValues      `json:"heightGrowthStandard"`
@@ -358,7 +373,13 @@ type stringSlice []string
 func (ts *stringSlice) UnmarshalJSON(data []byte) error {
 	raw, err := strconv.Unquote(string(data))
 	if err != nil {
-		return err
+		type typ stringSlice
+		var temp typ
+		if err := json.Unmarshal(data, &temp); err != nil {
+			return err
+		}
+		*ts = stringSlice(temp)
+		return nil
 	}
 	var strs []string
 	err = json.Unmarshal([]byte(raw), &strs)
@@ -372,11 +393,19 @@ func (ts *stringSlice) UnmarshalJSON(data []byte) error {
 type Timestamp time.Time
 
 func (ts *Timestamp) UnmarshalJSON(data []byte) error {
-	i, err := strconv.ParseInt(string(data), 10, 64)
-	if err != nil {
+	if isAllDigits(data) {
+		i, err := strconv.ParseInt(string(data), 10, 64)
+		if err != nil {
+			return err
+		}
+		*ts = Timestamp(time.Unix(i/1000, 0).UTC())
+		return nil
+	}
+	var t time.Time
+	if err := json.Unmarshal(data, &t); err != nil {
 		return err
 	}
-	*ts = Timestamp(time.Unix(i/1000, 0).UTC())
+	*ts = Timestamp(t)
 	return nil
 }
 
@@ -386,4 +415,16 @@ func (ts Timestamp) MarshalJSON() ([]byte, error) {
 
 func (ts Timestamp) String() string {
 	return time.Time(ts).String()
+}
+
+func isAllDigits(data []byte) bool {
+	if len(data) == 0 {
+		return false
+	}
+	for i := range data {
+		if data[i] < '0' || data[i] > '9' {
+			return false
+		}
+	}
+	return true
 }
