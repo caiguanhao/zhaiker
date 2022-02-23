@@ -1,6 +1,7 @@
 package zhaiker
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"os"
@@ -18,8 +19,25 @@ func Test(t *testing.T) {
 	client := NewClient(MustGetKey(ctx, accountName, accountPass))
 	var gyms []Gym
 	client.MustRequest(ctx, API_GET_GYMS, Params("pageSize", 100), &gyms, "DATA.*")
-	b, _ := json.Marshal(gyms)
-	t.Log("gyms:", string(b))
+	gymsBytes, err := json.Marshal(gyms)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log("gyms:", string(gymsBytes))
+
+	var gymsDup []Gym
+	if err := json.Unmarshal(gymsBytes, &gymsDup); err != nil {
+		t.Fatal(err)
+	}
+	gymsBytesDup, err := json.Marshal(gymsDup)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if bytes.Equal(gymsBytes, gymsBytesDup) {
+		t.Log("equal")
+	} else {
+		t.Error("not equal")
+	}
 
 	if len(gyms) == 0 {
 		t.Log("no gym to test")
@@ -43,8 +61,25 @@ func Test(t *testing.T) {
 			break
 		}
 	}
-	b, _ = json.Marshal(exams[index])
-	t.Log("example exam:", string(b))
+	examBytes, err := json.Marshal(exams[index])
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log("example exam:", string(examBytes))
+
+	var examDup Exam
+	if err := json.Unmarshal(examBytes, &examDup); err != nil {
+		t.Fatal(err)
+	}
+	examBytesDup, err := json.Marshal(examDup)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if bytes.Equal(examBytes, examBytesDup) {
+		t.Log("equal")
+	} else {
+		t.Error("not equal")
+	}
 
 	for i, exam := range exams {
 		if exam.BodyDetect != nil && exam.Age < 18 {
@@ -53,15 +88,49 @@ func Test(t *testing.T) {
 		}
 	}
 
-	var exam ExamWithStandards
-	client.MustRequest(ctx, API_GET_EXAM, Params("gymId", gyms[0].Id, "id", exams[index].Id), &exam)
-	b, _ = json.Marshal(exam)
-	t.Log("example exam:", string(b))
+	var ews ExamWithStandards
+	client.MustRequest(ctx, API_GET_EXAM, Params("gymId", gyms[0].Id, "id", exams[index].Id), &ews)
+	ewsBytes, err := json.Marshal(ews)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log("example exam:", string(ewsBytes))
+
+	var ewsDup ExamWithStandards
+	if err := json.Unmarshal(ewsBytes, &ewsDup); err != nil {
+		t.Fatal(err)
+	}
+	ewsBytesDup, err := json.Marshal(ewsDup)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if bytes.Equal(ewsBytes, ewsBytesDup) {
+		t.Log("equal")
+	} else {
+		t.Error("not equal")
+	}
 
 	var device Device
 	client.MustRequest(ctx, API_GET_DEVICE, Params("gymId", gyms[0].Id, "device", exams[index].DeviceFrom), &device, "DATA")
-	b, _ = json.Marshal(device)
-	t.Log("device:", string(b))
+	deviceBytes, err := json.Marshal(device)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log("device:", string(deviceBytes))
+
+	var deviceDup Device
+	if err := json.Unmarshal(deviceBytes, &deviceDup); err != nil {
+		t.Fatal(err)
+	}
+	deviceBytesDup, err := json.Marshal(deviceDup)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if bytes.Equal(deviceBytes, deviceBytesDup) {
+		t.Log("equal")
+	} else {
+		t.Error("not equal")
+	}
 
 	if image := exams[index].BodyImage; image != "" {
 		url := MustGetFileURL(ctx, image)
